@@ -149,3 +149,25 @@ select { padding-right: 8px; text-align-last: center; }
 .detail-body { padding: 0 16px 16px; }
 .detail-body > * + * { margin-top: 14px; }
 .detail-body > .lbl { margin-bottom: -6px; }
+
+/* ---------- History ---------- */
+.day-head { display: flex; justify-content: space-between; align-items: baseline; margin: 24px 4px 8px; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.day-head .sum, .meal .sum { font-size: 15px; font-weight: 600; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.swipe { position: relative; margin-bottom: 12px; border-radius: var(--r); overflow: hidden; }
+.swipe .meal { margin: 0; position: relative; z-index: 1; touch-action: pan-y; }
+.swipe-del { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; background: var(--danger); color: #fff; font-weight: 600; opacity: 0; }
+.swipe.dragging .swipe-del, .swipe.open .swipe-del { opacity: 1; }
+.meal { cursor: pointer; }
+.meal > * + * { margin-top: 4px; }
+.meal-top { display: flex; justify-content: space-between; }
+.meal .meta { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.meal-dish { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.meal-sub { font-size: 14px; color: var(--text-2); }
+.ing-list { margin-top: 10px !important; border-top: 0.5px solid var(--line); padding-top: 8px; }
+.ing-line { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 16px; }
+.ing-line .g { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.empty { text-align: center; padding: 56px 24px; color: var(--text-2); }
+.empty .emoji { font-size: 52px; margin-bottom: 8px; }
+.empty h3 { margin: 0 0 6px; color: var(--text); font-size: 20px; }
+.empty p { margin: 0 0 20px; }

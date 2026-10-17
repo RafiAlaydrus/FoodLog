@@ -29,8 +29,10 @@ if ('serviceWorker' in navigator) {
 }
 
 import * as log from './log.js';
+import * as history from './history.js';
 import { requestPersistence } from './db.js';
 
 register('log', log);
+register('history', history);
 requestPersistence();
 show('log');

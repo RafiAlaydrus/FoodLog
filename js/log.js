@@ -1,5 +1,5 @@
 import { h, ymd, hm, num, fmt, mealTagFor, datalist } from './ui.js';
-import { saveMeal, suggestions } from './db.js';
+import { saveMeal, deleteMeal, suggestions } from './db.js';
 import { toast, show } from './app.js';
 
 export const METHODS = [
@@ -84,7 +84,11 @@ export async function render(root, opts = {}) {
 
   const saveBtn = h('button', { type: 'submit', class: 'btn primary block big' }, ctx.editing ? 'Save changes' : 'Save meal');
   const actions = h('div', { class: 'actions' }, saveBtn,
-    ctx.editing && h('button', { type: 'button', class: 'btn plain block', onclick: () => show('history') }, 'Cancel'));
+    ctx.editing && h('button', { type: 'button', class: 'btn plain block', onclick: () => show('history') }, 'Cancel'),
+    ctx.editing && h('button', { type: 'button', class: 'btn danger block', onclick: async () => {
+      if (!confirm('Delete this meal?')) return;
+      await deleteMeal(ctx.editing.id); toast('Meal deleted'); show('history');
+    } }, 'Delete meal'));
   f.append(basics, h('h2', { class: 'section' }, 'Ingredients'), ingCard, details, actions);
   f.addEventListener('submit', (e) => { e.preventDefault(); save(); });
 

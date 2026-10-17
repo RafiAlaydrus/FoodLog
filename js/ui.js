@@ -41,3 +41,12 @@ export function mealTagFor(d = new Date()) {
 export function datalist(id, items) {
   return h('datalist', { id }, items.slice(0, 200).map((v) => h('option', { value: v })));
 }
+
+// Total grams of food in a meal: ingredients + oil + other fat + seasonings given in grams.
+export function mealGrams(m) {
+  let t = 0;
+  for (const i of m.ingredients || []) t += i.grams || 0;
+  t += (m.oilG || 0) + (m.fatG || 0);
+  for (const s of m.seasonings || []) if (s.unit === 'g') t += s.amount || 0;
+  return t;
+}
