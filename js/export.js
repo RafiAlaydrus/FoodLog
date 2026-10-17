@@ -1,5 +1,5 @@
 import { h, ymd, addDays, parseYmd, fmt } from './ui.js';
-import { mealsInRange } from './db.js';
+import { mealsInRange, exportAll, importAll, requestPersistence } from './db.js';
 import { toCSV, toText, totals } from './report.js';
 import { toast } from './app.js';
 
@@ -27,7 +27,7 @@ export async function render(root) {
     h('div', { class: 'card' }, h('div', { class: 'row2' },
       h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'From'), startIn),
       h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'To'), endIn))),
-    preview);
+    preview, await backupCard());
   for (const el of [startIn, endIn]) el.addEventListener('change', () => { state.start = startIn.value; state.end = endIn.value; refresh(); });
 
   async function refresh() {
@@ -87,4 +87,40 @@ async function share(file, csv, name) {
   }
   download(csv, name);
   toast('Downloaded CSV');
+}
+
+const lastBackup = () => { try { return localStorage.getItem('foodlog-last-backup'); } catch { return null; } };
+
+async function backupCard() {
+  let persisted = false;
+  try { persisted = navigator.storage?.persisted ? await navigator.storage.persisted() : false; } catch {}
+  if (!persisted) persisted = await requestPersistence();
+  const last = lastBackup();
+  const status = h('p', { class: 'hint' },
+    last ? `Last backup: ${new Date(last).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}. ` : 'No backup yet. ',
+    persisted ? 'Storage is protected on this device.' : 'Safari may clear storage if the phone is low on space, so back up now and then.');
+  const file = h('input', { type: 'file', accept: '.json,application/json', hidden: true, onchange: async () => {
+    const f = file.files[0]; file.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const n = (data.meals || []).length, t = (data.templates || []).length;
+      if (!confirm(`Restore ${n} meal${n === 1 ? '' : 's'} and ${t} saved dish${t === 1 ? '' : 'es'}? Entries with the same ID are overwritten, nothing else is removed.`)) return;
+      await importAll(data);
+      toast('Backup restored');
+      await render(document.getElementById('view-export'));
+    } catch (e) { toast(e.message.includes('Food Log') ? e.message : 'Could not read that file'); }
+  } });
+  return h('div', {},
+    h('h2', { class: 'section' }, 'Backup'),
+    h('div', { class: 'card' }, status,
+      h('div', { class: 'row2' },
+        h('button', { class: 'btn soft block', onclick: async () => {
+          const data = await exportAll();
+          download(JSON.stringify(data, null, 2), `foodlog-backup-${ymd()}.json`, 'application/json');
+          try { localStorage.setItem('foodlog-last-backup', new Date().toISOString()); } catch {}
+          toast('Backup saved');
+        } }, 'Back up'),
+        h('button', { class: 'btn soft block', onclick: () => file.click() }, 'Restore')),
+      file));
 }

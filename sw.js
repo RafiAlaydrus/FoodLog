@@ -1,5 +1,5 @@
 // Bump CACHE when shipping new files so installed copies refresh.
-const CACHE = 'foodlog-v1';
+const CACHE = 'foodlog-v2';
 const ASSETS = [
   './',
   './index.html',
