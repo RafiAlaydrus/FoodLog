@@ -1,13 +1,9 @@
-import { h, ymd, hm, num, fmt, mealTagFor, datalist } from './ui.js';
+import { h, ymd, hm, num, fmt, mealTagFor, datalist, METHODS, methodLabel } from './ui.js';
 import { saveMeal, deleteMeal, suggestions, allTemplates, saveTemplate } from './db.js';
 import { openDishes } from './dishes.js';
 import { toast, show } from './app.js';
 
-export const METHODS = [
-  ['pan-fry', 'Stove pan-fry'], ['deep-fry', 'Deep fry'], ['boil', 'Boil'], ['steam', 'Steam'],
-  ['air-fryer', 'Air fryer'], ['oven', 'Oven bake'], ['grill', 'Grill'], ['microwave', 'Microwave'], ['none', 'No cook']
-];
-export const methodLabel = (k) => (METHODS.find((m) => m[0] === k) || [, k || ''])[1];
+export { METHODS, methodLabel };
 const TAGS = ['breakfast', 'lunch', 'dinner', 'snack'];
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
 

@@ -30,9 +30,11 @@ if ('serviceWorker' in navigator) {
 
 import * as log from './log.js';
 import * as history from './history.js';
+import * as exportView from './export.js';
 import { requestPersistence } from './db.js';
 
 register('log', log);
 register('history', history);
+register('export', exportView);
 requestPersistence();
 show('log');

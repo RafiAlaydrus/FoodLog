@@ -50,3 +50,9 @@ export function mealGrams(m) {
   for (const s of m.seasonings || []) if (s.unit === 'g') t += s.amount || 0;
   return t;
 }
+
+export const METHODS = [
+  ['pan-fry', 'Stove pan-fry'], ['deep-fry', 'Deep fry'], ['boil', 'Boil'], ['steam', 'Steam'],
+  ['air-fryer', 'Air fryer'], ['oven', 'Oven bake'], ['grill', 'Grill'], ['microwave', 'Microwave'], ['none', 'No cook']
+];
+export const methodLabel = (k) => (METHODS.find((m) => m[0] === k) || [, k || ''])[1];
