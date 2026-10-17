@@ -1,5 +1,6 @@
 import { h, ymd, hm, num, fmt, mealTagFor, datalist } from './ui.js';
-import { saveMeal, deleteMeal, suggestions } from './db.js';
+import { saveMeal, deleteMeal, suggestions, allTemplates, saveTemplate } from './db.js';
+import { openDishes } from './dishes.js';
 import { toast, show } from './app.js';
 
 export const METHODS = [
@@ -32,8 +33,11 @@ export async function render(root, opts = {}) {
   root.replaceChildren();
 
   const f = h('form', { class: 'logform', novalidate: true });
+  const useDish = (t) => render(root, { prefill: t });
+  const dishes = ctx.editing ? null : await dishStrip(useDish);
   root.append(
     h('h1', { class: 'title' }, ctx.editing ? 'Edit meal' : 'Log'),
+    dishes,
     f,
     datalist('dl-dishes', sug.dishes), datalist('dl-ings', sug.ingredients),
     datalist('dl-cookware', sug.cookware), datalist('dl-oils', sug.oils)
@@ -66,7 +70,7 @@ export async function render(root, opts = {}) {
   const addSea = (v = {}) => seaList.append(seasoningRow(v, seaList));
 
   const details = h('details', { class: 'card details' },
-    h('summary', {}, h('span', {}, 'Cooking details'), h('span', { class: 'chev' }, '›')),
+    h('summary', {}, h('span', { class: 'sum-text' }, h('span', {}, 'Cooking details'), h('small', { class: 'recap' })), h('span', { class: 'chev' }, '›')),
     h('div', { class: 'detail-body' },
       h('div', { class: 'lbl' }, 'Method'), method.el,
       h('div', { class: 'row2' }, field('Cookware', input('cookware', { list: 'dl-cookware', placeholder: 'Pan, wok, pot…', autocapitalize: 'sentences' })),
@@ -84,6 +88,7 @@ export async function render(root, opts = {}) {
 
   const saveBtn = h('button', { type: 'submit', class: 'btn primary block big' }, ctx.editing ? 'Save changes' : 'Save meal');
   const actions = h('div', { class: 'actions' }, saveBtn,
+    h('button', { type: 'button', class: 'btn soft block', onclick: saveDish }, '⭐ Save as dish'),
     ctx.editing && h('button', { type: 'button', class: 'btn plain block', onclick: () => show('history') }, 'Cancel'),
     ctx.editing && h('button', { type: 'button', class: 'btn danger block', onclick: async () => {
       if (!confirm('Delete this meal?')) return;
@@ -108,6 +113,7 @@ export async function render(root, opts = {}) {
     if (src.ate) { f.ateVal.value = fmt(src.ate.value); ate.set(src.ate.unit || 'g'); }
     // Template reuse: cooking details start closed; the user only edits what changed.
     details.open = !!ctx.editing && hasDetails(src);
+    details.querySelector('.recap').textContent = detailSummary(src);
   } else {
     tag.set(mealTagFor());
     addIng(); addIng();
@@ -137,12 +143,18 @@ export async function render(root, opts = {}) {
     };
   }
 
-  async function save() {
+  function validated() {
     const m = collect();
     if (!m.dish) return fail('Add a dish name', f.dish);
     if (!m.ingredients.length) return fail('Add at least one ingredient');
     const bad = m.ingredients.find((i) => !i.name || i.grams == null);
     if (bad) return fail(bad.name ? `Add grams for ${bad.name}` : 'An ingredient is missing its name');
+    return m;
+  }
+
+  async function save() {
+    const m = validated();
+    if (!m) return;
     if (ctx.editing) Object.assign(m, { id: ctx.editing.id, createdAt: ctx.editing.createdAt });
     await saveMeal(m);
     toast(ctx.editing ? 'Changes saved' : 'Meal saved');
@@ -151,8 +163,35 @@ export async function render(root, opts = {}) {
   }
   function fail(msg, el) { toast(msg); el && el.focus(); }
 
+  async function saveDish() {
+    const m = validated();
+    if (!m) return;
+    const { date, time, tag: _t, ...body } = m;
+    const same = (await allTemplates()).find((t) => t.name.toLowerCase() === m.dish.toLowerCase());
+    if (same && !confirm(`Replace the saved dish "${same.name}"?`)) return;
+    await saveTemplate({ ...body, name: m.dish, id: same?.id });
+    toast('Saved as dish');
+    await render(root, ctx.editing ? { edit: ctx.editing } : {});
+  }
+
   // Exposed for the saved-dishes feature (step 4) and tests.
   root._collect = collect;
+}
+
+async function dishStrip(onUse) {
+  const list = (await allTemplates()).sort((a, b) => a.name.localeCompare(b.name));
+  return h('div', { class: 'dish-strip' },
+    h('div', { class: 'strip-head' }, h('span', { class: 'lbl' }, 'Saved dishes'),
+      h('button', { type: 'button', class: 'link', onclick: () => openDishes(onUse) }, list.length ? 'Manage' : 'How it works')),
+    list.length
+      ? h('div', { class: 'strip' }, list.map((t) => h('button', { type: 'button', class: 'chip', onclick: () => onUse(t) }, t.name)))
+      : h('p', { class: 'hint' }, 'Save a meal as a dish to log it again in one tap.'));
+}
+
+// One-line recap of the cooking details, shown on the collapsed section header.
+function detailSummary(m) {
+  return [methodLabel(m.method), m.minutes != null && `${fmt(m.minutes)} min`, m.tempC != null && `${fmt(m.tempC)}°C`,
+    m.oilG != null && `${m.oilType || 'oil'} ${fmt(m.oilG)} g`].filter(Boolean).join(' · ');
 }
 
 const hasDetails = (m) => m.method || m.cookware || m.heat || m.tempC != null || m.minutes != null || m.oilG != null ||
