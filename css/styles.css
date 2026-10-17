@@ -1,0 +1,92 @@
+/* ---------- Theme: change --accent to recolor the whole app ---------- */
+:root {
+  --accent: #3fa56b;
+
+  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-ink: color-mix(in srgb, var(--accent) 80%, #000);
+  --bg: #f6f7f6;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --text-2: #6b6f6c;
+  --line: rgba(60, 70, 62, 0.14);
+  --field: #f1f3f1;
+  --danger: #d6453d;
+  --shadow: 0 1px 2px rgba(20, 30, 22, 0.05), 0 4px 14px rgba(20, 30, 22, 0.04);
+
+  --r: 16px;
+  --gap: 16px;
+  --tabbar-h: 56px;
+  --ease: 160ms ease;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #4cbd7c;
+    --accent-ink: color-mix(in srgb, var(--accent) 70%, #fff);
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text: #f2f2f4;
+    --text-2: #9a9fa0;
+    --line: rgba(235, 245, 238, 0.14);
+    --field: #2a2b2c;
+    --danger: #ff6b62;
+    --shadow: none;
+  }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+[hidden] { display: none !important; }
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-left) + 16px)
+           calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 32px) calc(env(safe-area-inset-right) + 16px);
+}
+.view { animation: fade var(--ease); }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+h1.title { font-size: 34px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 20px; }
+h2.section { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin: 24px 4px 8px; }
+
+/* ---------- Tab bar ---------- */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid var(--line);
+}
+.tab {
+  flex: 1; max-width: 200px; min-height: var(--tabbar-h);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  transition: color var(--ease), transform var(--ease);
+}
+.tab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.tab.active { color: var(--accent); }
+.tab:active { transform: scale(0.94); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; z-index: 40;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none;
+  background: var(--text); color: var(--bg);
+  padding: 12px 18px; border-radius: 999px; font-size: 15px; font-weight: 600;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  transition: opacity var(--ease), transform var(--ease);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }

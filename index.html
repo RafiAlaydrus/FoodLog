@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3fa56b">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Food Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Food Log</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<main id="app">
+  <section id="view-log" class="view" hidden></section>
+  <section id="view-history" class="view" hidden></section>
+  <section id="view-export" class="view" hidden></section>
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <button class="tab" data-tab="log" aria-label="Log"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Log</span></button>
+  <button class="tab" data-tab="history" aria-label="History"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>History</span></button>
+  <button class="tab" data-tab="export" aria-label="Export"><svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg><span>Export</span></button>
+</nav>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
