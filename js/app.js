@@ -11,13 +11,13 @@ export function toast(msg) {
 
 export function register(name, mod) { views[name] = mod; }
 
-export async function show(name) {
+export async function show(name, opts) {
   for (const t of tabs) {
     document.getElementById('view-' + t).hidden = t !== name;
     document.querySelector(`.tab[data-tab="${t}"]`).classList.toggle('active', t === name);
   }
   const mod = views[name];
-  if (mod) await mod.render(document.getElementById('view-' + name));
+  if (mod) await mod.render(document.getElementById('view-' + name), opts);
   window.scrollTo(0, 0);
 }
 
@@ -28,4 +28,9 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
+import * as log from './log.js';
+import { requestPersistence } from './db.js';
+
+register('log', log);
+requestPersistence();
 show('log');

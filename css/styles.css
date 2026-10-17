@@ -90,3 +90,62 @@ h2.section { font-size: 13px; font-weight: 600; text-transform: uppercase; lette
   transition: opacity var(--ease), transform var(--ease);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Cards, fields, buttons ---------- */
+.card { background: var(--card); border-radius: var(--r); border: 0.5px solid var(--line); box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px; }
+.card > * + * { margin-top: 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: block; min-width: 0; }
+.lbl { display: block; font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+input, select, textarea {
+  width: 100%; min-height: 48px; padding: 10px 12px; font-size: 17px; /* 16px+ prevents iOS zoom */
+  background: var(--field); border: 1.5px solid transparent; border-radius: 12px; outline: none;
+  -webkit-appearance: none; appearance: none; transition: border-color var(--ease), background var(--ease);
+}
+input::placeholder, textarea::placeholder { color: var(--text-2); opacity: 0.7; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--card); }
+input[type=date], input[type=time] { min-width: 0; }
+textarea { resize: none; display: block; }
+input.big { font-size: 20px; font-weight: 600; }
+select { padding-right: 8px; text-align-last: center; }
+
+.with-unit { position: relative; }
+.with-unit input { padding-right: 38px; }
+.with-unit .unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-2); pointer-events: none; }
+
+.btn { min-height: 48px; padding: 0 20px; border-radius: 14px; font-weight: 600; font-size: 17px; transition: transform var(--ease), opacity var(--ease), background var(--ease); }
+.btn:active { transform: scale(0.97); opacity: 0.85; }
+.btn.block { width: 100%; display: block; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.big { min-height: 54px; font-size: 18px; }
+.btn.soft { background: var(--accent-soft); color: var(--accent-ink); }
+.btn.plain { color: var(--text-2); }
+.btn.danger { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.actions { margin-top: 20px; display: grid; gap: 8px; }
+
+.seg { display: flex; background: var(--field); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { flex: 1; min-height: 42px; border-radius: 10px; font-size: 15px; font-weight: 600; color: var(--text-2); transition: background var(--ease), color var(--ease); }
+.seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.seg.small button { min-height: 36px; padding: 0 12px; }
+.seg.chips { background: none; padding: 0; flex-wrap: wrap; gap: 8px; }
+.seg.chips button { flex: 0 0 auto; padding: 0 14px; background: var(--field); border-radius: 999px; }
+.seg.chips button.on { background: var(--accent); color: #fff; box-shadow: none; }
+
+/* ---------- Log form ---------- */
+.rows > * + * { margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--line); }
+.rows:empty { display: none; }
+.ing-top { display: grid; grid-template-columns: 1fr 108px 44px; gap: 8px; align-items: center; }
+.ing-sub { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px; align-items: center; }
+.ing-sub input { min-height: 40px; font-size: 16px; }
+.sea { display: grid; grid-template-columns: 1fr 70px 76px 44px; gap: 8px; align-items: center; }
+.x { width: 44px; height: 44px; font-size: 26px; line-height: 1; color: var(--text-2); border-radius: 12px; }
+.x:active { background: var(--field); }
+.row-ate { display: grid; grid-template-columns: 1fr 120px; gap: 12px; margin-top: 0; }
+.details { padding: 0; }
+.details summary { list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 56px; padding: 0 16px; font-weight: 600; cursor: pointer; }
+.details summary::-webkit-details-marker { display: none; }
+.details .chev { font-size: 24px; color: var(--text-2); transition: transform var(--ease); }
+.details[open] .chev { transform: rotate(90deg); }
+.detail-body { padding: 0 16px 16px; }
+.detail-body > * + * { margin-top: 14px; }
+.detail-body > .lbl { margin-bottom: -6px; }
