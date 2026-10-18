@@ -24,18 +24,23 @@ export async function render(root) {
 
   for (const [date, list] of days) {
     const total = list.reduce((s, m) => s + mealGrams(m), 0);
-    root.append(h('div', { class: 'day-head' }, h('span', {}, dayLabel(date)), h('span', { class: 'sum' }, `${fmt(total)} g`)));
+    root.append(h('div', { class: 'day-head' },
+      h('span', {}, dayLabel(date), h('small', {}, `${list.length} meal${list.length === 1 ? '' : 's'}`)),
+      h('span', { class: 'sum' }, `${fmt(total)} g`)));
     for (const m of list) root.append(mealCard(m, root));
   }
 }
 
 function mealCard(m, root) {
-  const parts = [m.time, cap(m.tag)].filter(Boolean).join(' · ');
-  const sub = [methodLabel(m.method), m.minutes != null ? `${fmt(m.minutes)} min` : '', m.tempC != null ? `${fmt(m.tempC)}°C` : '', cap(m.heat)].filter(Boolean).join(' · ');
+    const sub = [methodLabel(m.method), m.minutes != null ? `${fmt(m.minutes)} min` : '', m.tempC != null ? `${fmt(m.tempC)}°C` : '', cap(m.heat)].filter(Boolean).join(' · ');
   const fats = [m.oilG != null && `${m.oilType || 'Oil'} ${fmt(m.oilG)} g`, m.fatG != null && `${m.fatName || 'Fat'} ${fmt(m.fatG)} g`].filter(Boolean).join(' · ');
 
-  const card = h('div', { class: 'card meal', onclick: () => { if (!card._moved && !wrap.classList.contains('open')) show('log', { edit: m }); } },
-    h('div', { class: 'meal-top' }, h('span', { class: 'meta' }, parts), h('span', { class: 'sum' }, `${fmt(mealGrams(m))} g`)),
+  const card = h('div', { class: 'card meal', onclick: () => {
+    if (card._moved) return;
+    if (wrap.classList.contains('open')) { wrap.classList.remove('open'); card.style.transition = 'transform 160ms ease'; card.style.transform = ''; return; }
+    show('log', { edit: m });
+  } },
+    h('div', { class: 'meal-top' }, h('span', { class: 'meta' }, m.time, ' ', h('span', { class: 'pill' }, cap(m.tag))), h('span', { class: 'sum' }, `${fmt(mealGrams(m))} g`)),
     h('div', { class: 'meal-dish' }, m.dish),
     sub && h('div', { class: 'meal-sub' }, sub),
     h('div', { class: 'ing-list' }, (m.ingredients || []).map((i) =>
@@ -44,8 +49,11 @@ function mealCard(m, root) {
 
   const del = h('button', { class: 'swipe-del', 'aria-label': 'Delete meal', onclick: async () => {
     await deleteMeal(m.id);
-    toast('Meal deleted');
-    await render(root);
+    wrap.style.height = wrap.offsetHeight + 'px';
+    void wrap.offsetHeight;
+    wrap.classList.add('removing');
+    toast('Meal deleted', { action: { label: 'Undo', fn: async () => { await saveMeal(m); await render(root); } } });
+    setTimeout(() => render(root), 190);
   } }, 'Delete');
   const wrap = h('div', { class: 'swipe' }, del, card);
   attachSwipe(wrap, card);

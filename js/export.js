@@ -1,4 +1,4 @@
-import { h, ymd, addDays, parseYmd, fmt } from './ui.js';
+import { h, ymd, addDays, fmt, mealGrams } from './ui.js';
 import { mealsInRange, exportAll, importAll, requestPersistence } from './db.js';
 import { toCSV, toText, totals } from './report.js';
 import { toast } from './app.js';
@@ -45,15 +45,18 @@ export async function render(root) {
     const csv = toCSV(meals);
     const name = `foodlog_${state.start}_to_${state.end}.csv`;
     const file = new File([csv], name, { type: 'text/csv' });
-    const items = totals(meals).length;
+    const days = new Set(meals.map((m) => m.date)).size;
+    const grams = meals.reduce((t, m) => t + mealGrams(m), 0);
 
     preview.replaceChildren(
-      h('div', { class: 'actions export-actions' },
+      h('div', { class: 'stats export-fade' },
+        [[meals.length, 'Meals'], [days, days === 1 ? 'Day' : 'Days'], [fmt(grams), 'Grams']].map(([n, l]) => h('div', { class: 'stat' }, h('b', {}, String(n)), h('span', {}, l)))),
+      h('div', { class: 'actions export-actions export-fade' },
         h('button', { class: 'btn primary block big', onclick: () => copy(text) }, 'Copy as text'),
         h('div', { class: 'row2' },
           h('button', { class: 'btn soft block', onclick: () => download(csv, name) }, 'Download CSV'),
           h('button', { class: 'btn soft block', onclick: () => share(file, csv, name) }, 'Share'))),
-      h('h2', { class: 'section' }, `Preview · ${meals.length} meal${meals.length === 1 ? '' : 's'} · ${items} items`),
+      h('h2', { class: 'section' }, 'Preview'),
       h('pre', { class: 'card report' }, text));
   }
   await refresh();
@@ -67,7 +70,7 @@ async function copy(text) {
     const ok = document.execCommand('copy'); ta.remove();
     if (!ok) return toast('Could not copy');
   }
-  toast('Copied. Paste it into Claude');
+  toast('Copied. Paste it into Claude', { ok: true });
 }
 
 export function download(content, name, type = 'text/csv') {
@@ -107,7 +110,7 @@ async function backupCard() {
       const n = (data.meals || []).length, t = (data.templates || []).length;
       if (!confirm(`Restore ${n} meal${n === 1 ? '' : 's'} and ${t} saved dish${t === 1 ? '' : 'es'}? Entries with the same ID are overwritten, nothing else is removed.`)) return;
       await importAll(data);
-      toast('Backup restored');
+      toast('Backup restored', { ok: true });
       await render(document.getElementById('view-export'));
     } catch (e) { toast(e.message.includes('Food Log') ? e.message : 'Could not read that file'); }
   } });
@@ -119,7 +122,7 @@ async function backupCard() {
           const data = await exportAll();
           download(JSON.stringify(data, null, 2), `foodlog-backup-${ymd()}.json`, 'application/json');
           try { localStorage.setItem('foodlog-last-backup', new Date().toISOString()); } catch {}
-          toast('Backup saved');
+          toast('Backup saved', { ok: true });
         } }, 'Back up'),
         h('button', { class: 'btn soft block', onclick: () => file.click() }, 'Restore')),
       file));

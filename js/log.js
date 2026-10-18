@@ -28,7 +28,7 @@ export async function render(root, opts = {}) {
   const sug = await suggestions();
   root.replaceChildren();
 
-  const f = h('form', { class: 'logform', novalidate: true });
+  const f = h('form', { class: 'logform', novalidate: true, 'data-editing': ctx.editing ? '1' : null });
   const useDish = (t) => render(root, { prefill: t });
   const dishes = ctx.editing ? null : await dishStrip(useDish);
   root.append(
@@ -51,10 +51,10 @@ export async function render(root, opts = {}) {
 
   // --- Ingredients
   const ingList = h('div', { class: 'rows' });
-  const addIng = (v = {}) => ingList.append(ingredientRow(v, ingList));
+  const addIng = (v = {}, animate = false) => { const r = ingredientRow(v); if (animate) r.classList.add('new'); ingList.append(r); return r; };
   const ingCard = h('div', { class: 'card' },
     ingList,
-    h('button', { type: 'button', class: 'btn soft block', onclick: () => { addIng(); ingList.lastChild.querySelector('[name=iname]').focus(); } }, '+ Add ingredient'));
+    h('button', { type: 'button', class: 'btn soft block', onclick: () => addIng({}, true).querySelector('[name=iname]').focus() }, '+ Add ingredient'));
 
   // --- Cooking details
   const method = segmented(METHODS, { optional: true });
@@ -63,7 +63,7 @@ export async function render(root, opts = {}) {
   const ate = segmented([['g', 'g'], ['%', '%']]);
   ate.set('g');
   const seaList = h('div', { class: 'rows' });
-  const addSea = (v = {}) => seaList.append(seasoningRow(v, seaList));
+  const addSea = (v = {}, animate = false) => { const r = seasoningRow(v); if (animate) r.classList.add('new'); seaList.append(r); return r; };
 
   const details = h('details', { class: 'card details' },
     h('summary', {}, h('span', { class: 'sum-text' }, h('span', {}, 'Cooking details'), h('small', { class: 'recap' })), h('span', { class: 'chev' }, '›')),
@@ -76,7 +76,7 @@ export async function render(root, opts = {}) {
       h('div', { class: 'row2' }, field('Oil type', input('oilType', { list: 'dl-oils', placeholder: 'Olive, canola…', autocapitalize: 'sentences' })), field('Oil', dec('oilG', '0', 'g'))),
       h('div', { class: 'row2' }, field('Other fat', input('fatName', { placeholder: 'Butter, ghee…', autocapitalize: 'sentences' })), field('Fat', dec('fatG', '0', 'g'))),
       h('div', { class: 'lbl' }, 'Seasonings and sauces'), seaList,
-      h('button', { type: 'button', class: 'btn soft block', onclick: () => { addSea(); seaList.lastChild.querySelector('[name=sname]').focus(); } }, '+ Add seasoning'),
+      h('button', { type: 'button', class: 'btn soft block', onclick: () => addSea({}, true).querySelector('[name=sname]').focus() }, '+ Add seasoning'),
       h('div', { class: 'row2' }, field('Water / liquid added', dec('liquidMl', '0', 'ml')), field('Total cooked weight', dec('cookedG', '0', 'g'))),
       h('div', { class: 'lbl' }, 'How much I ate'),
       h('div', { class: 'row-ate' }, dec('ateVal', '0'), ate.el),
@@ -92,6 +92,20 @@ export async function render(root, opts = {}) {
     } }, 'Delete meal'));
   f.append(basics, h('h2', { class: 'section' }, 'Ingredients'), ingCard, details, actions);
   f.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+  // Return moves along the form instead of submitting: name -> grams -> next row (new row after the last).
+  f.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (e.key !== 'Enter' || t.tagName !== 'INPUT') return;
+    e.preventDefault();
+    const row = t.closest('.ing');
+    if (t.name === 'dish') return (ingList.querySelector('[name=iname]') || t).focus();
+    if (row && t.name === 'iname') return row.querySelector('[name=igrams]').focus();
+    if (row && t.name === 'igrams') {
+      const next = row.nextElementSibling || addIng({}, true);
+      return next.querySelector('[name=iname]').focus();
+    }
+    t.blur();
+  });
 
   // Pre-fill (edit, template, or blank)
   const src = ctx.editing || opts.prefill;
@@ -153,7 +167,7 @@ export async function render(root, opts = {}) {
     if (!m) return;
     if (ctx.editing) Object.assign(m, { id: ctx.editing.id, createdAt: ctx.editing.createdAt });
     await saveMeal(m);
-    toast(ctx.editing ? 'Changes saved' : 'Meal saved');
+    toast(ctx.editing ? 'Changes saved' : 'Meal saved', { ok: true });
     if (ctx.editing) await show('history'); else await render(root);
     if (!ctx.editing) window.scrollTo(0, 0);
   }
@@ -166,8 +180,9 @@ export async function render(root, opts = {}) {
     const same = (await allTemplates()).find((t) => t.name.toLowerCase() === m.dish.toLowerCase());
     if (same && !confirm(`Replace the saved dish "${same.name}"?`)) return;
     await saveTemplate({ ...body, name: m.dish, id: same?.id });
-    toast('Saved as dish');
-    await render(root, ctx.editing ? { edit: ctx.editing } : {});
+    toast('Saved as dish', { ok: true });
+    const strip = root.querySelector('.dish-strip');
+    if (strip) strip.replaceWith(await dishStrip(useDish));
   }
 
   // Exposed for the saved-dishes feature (step 4) and tests.
@@ -190,10 +205,15 @@ function detailSummary(m) {
     m.oilG != null && `${m.oilType || 'oil'} ${fmt(m.oilG)} g`].filter(Boolean).join(' · ');
 }
 
+function removeRow(row) {
+  row.classList.add('out');
+  setTimeout(() => row.remove(), 170);
+}
+
 const hasDetails = (m) => m.method || m.cookware || m.heat || m.tempC != null || m.minutes != null || m.oilG != null ||
   m.fatG != null || (m.seasonings || []).length || m.liquidMl != null || m.cookedG != null || m.ate || m.notes;
 
-function ingredientRow(v, list) {
+function ingredientRow(v) {
   const state = segmented([['raw', 'Raw'], ['cooked', 'Cooked']]);
   state.set(v.state || 'raw');
   state.el.classList.add('small');
@@ -201,18 +221,18 @@ function ingredientRow(v, list) {
     h('div', { class: 'ing-top' },
       input('iname', { placeholder: 'Ingredient', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Ingredient name' }),
       h('div', { class: 'with-unit g' }, input('igrams', { inputmode: 'decimal', placeholder: '0', value: fmt(v.grams), 'aria-label': 'Grams' }), h('span', { class: 'unit' }, 'g')),
-      h('button', { type: 'button', class: 'x', 'aria-label': 'Remove ingredient', onclick: () => { row.remove(); } }, '×')),
+      h('button', { type: 'button', class: 'x', 'aria-label': 'Remove ingredient', onclick: () => removeRow(row) }, '×')),
     h('div', { class: 'ing-sub' }, state.el, input('ibrand', { placeholder: 'Brand (optional)', value: v.brand || '', autocapitalize: 'sentences', 'aria-label': 'Brand' })));
   return row;
 }
 
-function seasoningRow(v, list) {
+function seasoningRow(v) {
   const unit = h('select', { name: 'sunit', 'aria-label': 'Unit' }, ['g', 'tsp', 'tbsp'].map((u) => h('option', { value: u }, u)));
   unit.value = v.unit || 'g';
   const row = h('div', { class: 'sea' },
     input('sname', { placeholder: 'Salt, soy sauce…', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Seasoning name' }),
     input('samount', { inputmode: 'decimal', placeholder: '0', value: fmt(v.amount), 'aria-label': 'Amount' }),
     unit,
-    h('button', { type: 'button', class: 'x', 'aria-label': 'Remove seasoning', onclick: () => row.remove() }, '×'));
+    h('button', { type: 'button', class: 'x', 'aria-label': 'Remove seasoning', onclick: () => removeRow(row) }, '×'));
   return row;
 }
