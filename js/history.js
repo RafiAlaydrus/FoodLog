@@ -1,4 +1,4 @@
-import { h, fmt, dayLabel, mealGrams, amountText } from './ui.js';
+import { h, fmt, dayLabel, mealGrams, amountText, pageHead, emptyState } from './ui.js';
 import { allMeals, deleteMeal, saveMeal } from './db.js';
 import { toast, show } from './app.js';
 import { methodLabel } from './log.js';
@@ -8,13 +8,10 @@ const REVEAL = 88;
 
 export async function render(root) {
   const meals = (await allMeals()).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
-  root.replaceChildren(h('h1', { class: 'title' }, 'History'));
+  root.replaceChildren(pageHead('History', meals.length ? `${meals.length} meal${meals.length === 1 ? '' : 's'} logged` : 'Your kitchen diary'));
 
   if (!meals.length) {
-    root.append(h('div', { class: 'empty' },
-      h('div', { class: 'emoji' }, '🍳'),
-      h('h3', {}, 'No meals yet'),
-      h('p', {}, 'Meals you log will show up here, grouped by day.'),
+    root.append(emptyState('No meals yet', 'Meals you log will show up here, grouped by day.',
       h('button', { class: 'btn primary', onclick: () => show('log') }, 'Log your first meal')));
     return;
   }
@@ -35,7 +32,7 @@ function mealCard(m, root) {
     const sub = [methodLabel(m.method), m.minutes != null ? `${fmt(m.minutes)} min` : '', m.tempC != null ? `${fmt(m.tempC)}°C` : '', cap(m.heat)].filter(Boolean).join(' · ');
   const fats = [m.oilG != null && `${m.oilType || 'Oil'} ${fmt(m.oilG)} g`, m.fatG != null && `${m.fatName || 'Fat'} ${fmt(m.fatG)} g`].filter(Boolean).join(' · ');
 
-  const card = h('div', { class: 'card meal', onclick: () => {
+  const card = h('div', { class: `card meal tag-${m.tag || 'none'}`, onclick: () => {
     if (card._moved) return;
     if (wrap.classList.contains('open')) { wrap.classList.remove('open'); card.style.transition = 'transform 160ms ease'; card.style.transform = ''; return; }
     show('log', { edit: m });

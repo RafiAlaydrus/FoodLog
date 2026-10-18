@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#3fa56b">
+<meta name="theme-color" content="#fbf6ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15110e" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -23,7 +24,8 @@
 </main>
 
 <nav class="tabbar" aria-label="Main">
-  <button class="tab" data-tab="log" aria-label="Log"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Log</span></button>
+  <span class="tab-ind" aria-hidden="true"></span>
+  <button class="tab" data-tab="log" aria-label="Log"><svg viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0zM12 3v4M8.5 4.5l1 2M15.5 4.5l-1 2"/></svg><span>Log</span></button>
   <button class="tab" data-tab="history" aria-label="History"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>History</span></button>
   <button class="tab" data-tab="export" aria-label="Export"><svg viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg><span>Export</span></button>
 </nav>

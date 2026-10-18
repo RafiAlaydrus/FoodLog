@@ -1,9 +1,9 @@
-import { h, ymd, addDays, fmt, mealGrams } from './ui.js';
+import { h, ymd, addDays, fmt, mealGrams, pageHead, emptyState, countUp } from './ui.js';
 import { mealsInRange, exportAll, importAll, requestPersistence } from './db.js';
 import { toCSV, toText, totals } from './report.js';
 import { toast } from './app.js';
 
-let state = { start: '', end: '' };
+let state = { start: '', end: '', preset: 'Last 7 days' };
 
 function weekStart(d = new Date()) {   // Monday of this week
   const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return ymd(x);
@@ -21,14 +21,17 @@ export async function render(root) {
   const endIn = h('input', { type: 'date', value: state.end, 'aria-label': 'End date' });
   const preview = h('div', {});
   const chips = h('div', { class: 'strip wrap' }, Object.keys(presets).map((k) =>
-    h('button', { class: 'chip', onclick: () => { [state.start, state.end] = presets[k](); startIn.value = state.start; endIn.value = state.end; refresh(); } }, k)));
+    h('button', { class: 'chip' + (state.preset === k ? ' on' : ''), 'data-p': k, onclick: () => {
+      [state.start, state.end] = presets[k](); state.preset = k; startIn.value = state.start; endIn.value = state.end; markPreset(); refresh();
+    } }, k)));
+  const markPreset = () => chips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.p === state.preset));
 
-  root.append(h('h1', { class: 'title' }, 'Export'), chips,
+  root.append(pageHead('Export', 'Send your week to Claude'), chips,
     h('div', { class: 'card' }, h('div', { class: 'row2' },
       h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'From'), startIn),
       h('label', { class: 'field' }, h('span', { class: 'lbl' }, 'To'), endIn))),
     preview, await backupCard());
-  for (const el of [startIn, endIn]) el.addEventListener('change', () => { state.start = startIn.value; state.end = endIn.value; refresh(); });
+  for (const el of [startIn, endIn]) el.addEventListener('change', () => { state.start = startIn.value; state.end = endIn.value; state.preset = ''; markPreset(); refresh(); });
 
   async function refresh() {
     if (!state.start || !state.end || state.start > state.end) {
@@ -37,7 +40,7 @@ export async function render(root) {
     }
     const meals = await mealsInRange(state.start, state.end);
     if (!meals.length) {
-      preview.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'emoji' }, '🗓️'), h('h3', {}, 'Nothing logged in this range'), h('p', {}, 'Try a wider range, or log a meal first.')));
+      preview.replaceChildren(emptyState('Nothing logged in this range', 'Try a wider range, or log a meal first.'));
       return;
     }
     // Build everything now so the buttons can run synchronously inside the tap (iOS needs that for share/clipboard).
@@ -50,7 +53,9 @@ export async function render(root) {
 
     preview.replaceChildren(
       h('div', { class: 'stats export-fade' },
-        [[meals.length, 'Meals'], [days, days === 1 ? 'Day' : 'Days'], [fmt(grams), 'Grams']].map(([n, l]) => h('div', { class: 'stat' }, h('b', {}, String(n)), h('span', {}, l)))),
+        [[meals.length, 'Meals'], [days, days === 1 ? 'Day' : 'Days'], [grams, 'Grams']].map(([n, l]) => {
+          const b = h('b', {}, '0'); countUp(b, n); return h('div', { class: 'stat' }, b, h('span', {}, l));
+        })),
       h('div', { class: 'actions export-actions export-fade' },
         h('button', { class: 'btn primary block big', onclick: () => copy(text) }, 'Copy as text'),
         h('div', { class: 'row2' },

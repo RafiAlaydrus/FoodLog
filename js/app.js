@@ -29,6 +29,7 @@ export async function show(name, opts) {
     document.getElementById('view-' + t).hidden = t !== name;
     document.querySelector(`.tab[data-tab="${t}"]`).classList.toggle('active', t === name);
   }
+  document.querySelector('.tabbar').style.setProperty('--i', tabs.indexOf(name));
   const root = document.getElementById('view-' + name);
   const mod = views[name];
   root.classList.remove('enter');

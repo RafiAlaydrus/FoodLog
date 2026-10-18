@@ -1,4 +1,4 @@
-import { h, ymd, hm, num, fmt, mealTagFor, datalist, METHODS, methodLabel, UNITS, SEASONING_UNITS, toGrams, ingAmount } from './ui.js';
+import { h, ymd, hm, num, fmt, mealTagFor, datalist, METHODS, methodLabel, UNITS, SEASONING_UNITS, toGrams, ingAmount, pageHead } from './ui.js';
 import { saveMeal, deleteMeal, suggestions, allTemplates, saveTemplate } from './db.js';
 import { openDishes } from './dishes.js';
 import { toast, show } from './app.js';
@@ -12,10 +12,22 @@ let ctx = { editing: null };   // meal being edited, if any
 // Segmented control; value() returns the selected key or '' (tap again to clear when optional).
 function segmented(options, { optional = false, onchange } = {}) {
   let val = '';
-  const wrap = h('div', { class: 'seg', role: 'group' });
+  const thumb = h('span', { class: 'thumb', 'aria-hidden': 'true' });
+  const wrap = h('div', { class: 'seg', role: 'group' }, thumb);
   const btns = options.map(([k, label]) => h('button', { type: 'button', 'data-k': k, onclick: () => set(optional && val === k ? '' : k) }, label));
   wrap.append(...btns);
-  function set(k) { val = k; btns.forEach((b) => b.classList.toggle('on', b.dataset.k === k)); onchange && onchange(k); }
+  // The thumb slides under the chosen button. It is placed once the control has a size
+  // (it may start inside a closed <details>), then animates from there on.
+  function place() {
+    const b = btns.find((x) => x.dataset.k === val);
+    if (!b || !b.offsetWidth) { thumb.style.opacity = 0; return; }
+    thumb.style.opacity = 1;
+    thumb.style.width = b.offsetWidth + 'px';
+    thumb.style.transform = `translateX(${b.offsetLeft}px)`;
+    if (!wrap.classList.contains('ready')) requestAnimationFrame(() => wrap.classList.add('ready'));
+  }
+  if (window.ResizeObserver) new ResizeObserver(place).observe(wrap);
+  function set(k) { val = k; btns.forEach((b) => b.classList.toggle('on', b.dataset.k === k)); place(); onchange && onchange(k); }
   return { el: wrap, get: () => val, set };
 }
 
@@ -32,7 +44,7 @@ export async function render(root, opts = {}) {
   const useDish = (t) => render(root, { prefill: t });
   const dishes = ctx.editing ? null : await dishStrip(useDish);
   root.append(
-    h('h1', { class: 'title' }, ctx.editing ? 'Edit meal' : 'Log'),
+    ctx.editing ? pageHead('Edit meal', 'Fix anything that changed') : pageHead('What’s cooking?', new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })),
     dishes,
     f,
     datalist('dl-dishes', sug.dishes), datalist('dl-ings', sug.ingredients),
@@ -163,14 +175,20 @@ export async function render(root, opts = {}) {
     return m;
   }
 
+  let saving = false;
   async function save() {
+    if (saving) return;   // ignore extra taps while the save animation plays
     const m = validated();
     if (!m) return;
+    saving = true;
     if (ctx.editing) Object.assign(m, { id: ctx.editing.id, createdAt: ctx.editing.createdAt });
     await saveMeal(m);
     toast(ctx.editing ? 'Changes saved' : 'Meal saved', { ok: true });
-    if (ctx.editing) await show('history'); else await render(root);
-    if (!ctx.editing) window.scrollTo(0, 0);
+    // Morph the button into a check for a beat, then move on.
+    saveBtn.classList.add('done');
+    saveBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Saved';
+    await new Promise((r) => setTimeout(r, 520));
+    await show(ctx.editing ? 'history' : 'log');
   }
   function fail(msg, el) { toast(msg); el && el.focus(); }
 

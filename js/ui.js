@@ -64,3 +64,31 @@ export const SEASONING_UNITS = ['g', 'tsp', 'tbsp', 'ml', 'pc'];
 export const toGrams = (amount, unit) => (amount == null ? null : unit === 'g' ? amount : unit === 'kg' ? amount * 1000 : null);
 export const ingAmount = (i) => (i.unit ? { amount: i.amount, unit: i.unit } : { amount: i.grams, unit: 'g' });
 export const amountText = (i) => { const a = ingAmount(i); return a.amount == null ? '' : `${fmt(a.amount)} ${a.unit}`; };
+
+// Screen header: small accent eyebrow over a big serif title.
+export function pageHead(title, eyebrow) {
+  return h('header', { class: 'head' }, eyebrow && h('div', { class: 'eyebrow' }, eyebrow), h('h1', { class: 'title' }, title));
+}
+
+const PLATE_ART = `<svg class="art" viewBox="0 0 132 132" aria-hidden="true">
+  <path class="steam" d="M52 44c-6-8 6-12 0-20"/><path class="steam" d="M66 40c-6-8 6-12 0-20"/><path class="steam" d="M80 44c-6-8 6-12 0-20"/>
+  <g class="bowl"><ellipse class="plate" cx="66" cy="92" rx="52" ry="18"/><ellipse class="rim" cx="66" cy="90" rx="36" ry="11"/></g></svg>`;
+
+// Friendly empty state with a gently steaming plate.
+export function emptyState(title, text, action) {
+  const el = h('div', { class: 'empty' }, h('h3', {}, title), h('p', {}, text), action);
+  el.insertAdjacentHTML('afterbegin', PLATE_ART);
+  return el;
+}
+
+// Counts a number up from 0 for a little life in stat tiles.
+export function countUp(el, to, ms = 650) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dec = to % 1 !== 0;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = k < 1 ? (dec ? (to * e).toFixed(1) : Math.round(to * e)) : fmt(to);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
