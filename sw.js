@@ -1,5 +1,5 @@
 // Bump CACHE when shipping new files so installed copies refresh.
-const CACHE = 'foodlog-v3';
+const CACHE = 'foodlog-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -20,7 +20,7 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -31,19 +31,22 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Cache first, refresh in the background (stale-while-revalidate).
+// Network first (bypassing the HTTP cache, which GitHub Pages sets to 10 minutes) so updates show up on the
+// next open; falls back to the cache when offline or the network is slow.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
-  e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((hit) => {
-      const net = fetch(req)
-        .then((res) => {
-          if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
-          return res;
-        })
-        .catch(() => hit || caches.match('./index.html'));
-      return hit || net;
-    })
-  );
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    try {
+      const res = await Promise.race([
+        fetch(req, { cache: 'no-cache' }),
+        new Promise((_, rej) => setTimeout(rej, 4000))
+      ]);
+      if (res.ok) cache.put(req, res.clone());
+      return res;
+    } catch {
+      return (await cache.match(req, { ignoreSearch: true })) || (await cache.match('./index.html'));
+    }
+  })());
 });

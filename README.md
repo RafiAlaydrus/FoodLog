@@ -30,4 +30,4 @@ Edit `--accent` at the top of `css/styles.css` (and `theme_color` in `manifest.w
 
 ## Updating the app
 
-Installed copies cache files for offline use. After changing any file, bump `CACHE` in `sw.js` (for example `foodlog-v3`) so phones pick up the new version.
+Installed copies keep a cached copy for offline use, but the app fetches fresh files on every open when online, so updates appear the next time you open it. Bump `CACHE` in `sw.js` only if you add or rename files.
