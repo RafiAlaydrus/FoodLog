@@ -136,9 +136,10 @@ select { padding-right: 8px; text-align-last: center; }
 /* ---------- Log form ---------- */
 .rows > * + * { margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--line); }
 .rows:empty { display: none; }
-.ing-top { display: grid; grid-template-columns: 1fr 108px 44px; gap: 8px; align-items: center; }
-.ing-sub { display: grid; grid-template-columns: auto 1fr; gap: 8px; margin-top: 8px; align-items: center; }
-.ing-sub input { min-height: 40px; font-size: 16px; }
+.ing-top { display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; }
+.ing-amt { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; margin-top: 8px; align-items: center; }
+.ing .brand { margin-top: 8px; min-height: 44px; font-size: 16px; }
+@media (max-width: 370px) { .ing-amt { grid-template-columns: 1fr 1fr; } .ing-amt .seg { grid-column: 1 / -1; } }
 .sea { display: grid; grid-template-columns: 1fr 70px 76px 44px; gap: 8px; align-items: center; }
 .x { width: 44px; height: 44px; font-size: 26px; line-height: 1; color: var(--text-2); border-radius: 12px; }
 .x:active { background: var(--field); }

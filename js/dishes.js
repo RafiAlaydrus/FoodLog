@@ -1,4 +1,4 @@
-import { h, fmt } from './ui.js';
+import { h, amountText } from './ui.js';
 import { allTemplates, deleteTemplate } from './db.js';
 import { toast } from './app.js';
 
@@ -15,7 +15,7 @@ export async function openDishes(onUse) {
         ? h('div', {}, list.map((t) => h('div', { class: 'card dish-row' },
             h('button', { class: 'dish-use', onclick: () => { close(); onUse(t); } },
               h('div', { class: 'meal-dish' }, t.name),
-              h('div', { class: 'meal-sub' }, (t.ingredients || []).map((i) => `${i.name} ${fmt(i.grams)} g`).join(', '))),
+              h('div', { class: 'meal-sub' }, (t.ingredients || []).map((i) => `${i.name} ${amountText(i)}`).join(', '))),
             h('button', { class: 'x', 'aria-label': 'Delete saved dish', onclick: async () => {
               if (!confirm(`Remove "${t.name}" from saved dishes?`)) return;
               await deleteTemplate(t.id); toast('Removed'); fill();

@@ -24,7 +24,7 @@ export function num(v) {
   const n = parseFloat(String(v).replace(',', '.'));
   return Number.isFinite(n) ? n : null;
 }
-export const fmt = (n) => (n == null ? '' : String(Math.round(n * 10) / 10));
+export const fmt = (n) => (n == null ? '' : String(Math.round(n * 100) / 100));
 
 export function dayLabel(s) {
   const today = ymd();
@@ -56,3 +56,11 @@ export const METHODS = [
   ['air-fryer', 'Air fryer'], ['oven', 'Oven bake'], ['grill', 'Grill'], ['microwave', 'Microwave'], ['none', 'No cook']
 ];
 export const methodLabel = (k) => (METHODS.find((m) => m[0] === k) || [, k || ''])[1];
+
+// Amounts: each ingredient has { amount, unit }. Only g and kg convert to grams; other units (pc, ml, L...)
+// are kept as entered. Meals saved before units existed have just `grams`, treated as unit g.
+export const UNITS = ['g', 'kg', 'ml', 'L', 'pc', 'tsp', 'tbsp', 'cup'];
+export const SEASONING_UNITS = ['g', 'tsp', 'tbsp', 'ml', 'pc'];
+export const toGrams = (amount, unit) => (amount == null ? null : unit === 'g' ? amount : unit === 'kg' ? amount * 1000 : null);
+export const ingAmount = (i) => (i.unit ? { amount: i.amount, unit: i.unit } : { amount: i.grams, unit: 'g' });
+export const amountText = (i) => { const a = ingAmount(i); return a.amount == null ? '' : `${fmt(a.amount)} ${a.unit}`; };

@@ -57,8 +57,10 @@ export async function deleteTemplate(id) { return wrap((await store('templates',
 export async function suggestions() {
   const [meals, templates] = await Promise.all([allMeals(), allTemplates()]);
   const count = (map, name) => { name = (name || '').trim(); if (name) map.set(name, (map.get(name) || 0) + 1); };
-  const dishes = new Map(), ings = new Map(), cookware = new Map(), oils = new Map();
-  for (const m of [...meals, ...templates]) {
+  const dishes = new Map(), ings = new Map(), cookware = new Map(), oils = new Map(), units = {};
+  const remember = (x) => { if (x.name && x.unit) units[x.name.trim().toLowerCase()] = x.unit; };
+  for (const m of [...meals].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).concat(templates)) {
+    (m.ingredients || []).forEach(remember); (m.seasonings || []).forEach(remember);
     count(dishes, m.dish || m.name);
     count(cookware, m.cookware);
     count(oils, m.oilType);
@@ -66,7 +68,7 @@ export async function suggestions() {
     (m.seasonings || []).forEach((s) => count(ings, s.name));
   }
   const top = (map) => [...map.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => n);
-  return { dishes: top(dishes), ingredients: top(ings), cookware: top(cookware), oils: top(oils) };
+  return { dishes: top(dishes), ingredients: top(ings), cookware: top(cookware), oils: top(oils), units };
 }
 
 export async function exportAll() {

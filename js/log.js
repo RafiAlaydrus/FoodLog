@@ -1,4 +1,4 @@
-import { h, ymd, hm, num, fmt, mealTagFor, datalist, METHODS, methodLabel } from './ui.js';
+import { h, ymd, hm, num, fmt, mealTagFor, datalist, METHODS, methodLabel, UNITS, SEASONING_UNITS, toGrams, ingAmount } from './ui.js';
 import { saveMeal, deleteMeal, suggestions, allTemplates, saveTemplate } from './db.js';
 import { openDishes } from './dishes.js';
 import { toast, show } from './app.js';
@@ -51,7 +51,7 @@ export async function render(root, opts = {}) {
 
   // --- Ingredients
   const ingList = h('div', { class: 'rows' });
-  const addIng = (v = {}, animate = false) => { const r = ingredientRow(v); if (animate) r.classList.add('new'); ingList.append(r); return r; };
+  const addIng = (v = {}, animate = false) => { const r = ingredientRow(v, sug.units); if (animate) r.classList.add('new'); ingList.append(r); return r; };
   const ingCard = h('div', { class: 'card' },
     ingList,
     h('button', { type: 'button', class: 'btn soft block', onclick: () => addIng({}, true).querySelector('[name=iname]').focus() }, '+ Add ingredient'));
@@ -63,7 +63,7 @@ export async function render(root, opts = {}) {
   const ate = segmented([['g', 'g'], ['%', '%']]);
   ate.set('g');
   const seaList = h('div', { class: 'rows' });
-  const addSea = (v = {}, animate = false) => { const r = seasoningRow(v); if (animate) r.classList.add('new'); seaList.append(r); return r; };
+  const addSea = (v = {}, animate = false) => { const r = seasoningRow(v, sug.units); if (animate) r.classList.add('new'); seaList.append(r); return r; };
 
   const details = h('details', { class: 'card details' },
     h('summary', {}, h('span', { class: 'sum-text' }, h('span', {}, 'Cooking details'), h('small', { class: 'recap' })), h('span', { class: 'chev' }, '›')),
@@ -99,8 +99,8 @@ export async function render(root, opts = {}) {
     e.preventDefault();
     const row = t.closest('.ing');
     if (t.name === 'dish') return (ingList.querySelector('[name=iname]') || t).focus();
-    if (row && t.name === 'iname') return row.querySelector('[name=igrams]').focus();
-    if (row && t.name === 'igrams') {
+    if (row && t.name === 'iname') return row.querySelector('[name=iamount]').focus();
+    if (row && t.name === 'iamount') {
       const next = row.nextElementSibling || addIng({}, true);
       return next.querySelector('[name=iname]').focus();
     }
@@ -134,10 +134,11 @@ export async function render(root, opts = {}) {
     const v = (n) => f[n].value.trim();
     const ingredients = [...ingList.children].map((r) => ({
       name: r.querySelector('[name=iname]').value.trim(),
-      grams: num(r.querySelector('[name=igrams]').value),
+      amount: num(r.querySelector('[name=iamount]').value),
+      unit: r.querySelector('[name=iunit]').value,
       state: r.querySelector('.seg .on')?.dataset.k || 'raw',
       brand: r.querySelector('[name=ibrand]').value.trim()
-    })).filter((i) => i.name || i.grams != null);
+    })).filter((i) => i.name || i.amount != null).map((i) => ({ ...i, grams: toGrams(i.amount, i.unit) }));
     const seasonings = [...seaList.children].map((r) => ({
       name: r.querySelector('[name=sname]').value.trim(),
       amount: num(r.querySelector('[name=samount]').value),
@@ -157,8 +158,8 @@ export async function render(root, opts = {}) {
     const m = collect();
     if (!m.dish) return fail('Add a dish name', f.dish);
     if (!m.ingredients.length) return fail('Add at least one ingredient');
-    const bad = m.ingredients.find((i) => !i.name || i.grams == null);
-    if (bad) return fail(bad.name ? `Add grams for ${bad.name}` : 'An ingredient is missing its name');
+    const bad = m.ingredients.find((i) => !i.name || i.amount == null);
+    if (bad) return fail(bad.name ? `Add an amount for ${bad.name}` : 'An ingredient is missing its name');
     return m;
   }
 
@@ -213,26 +214,42 @@ function removeRow(row) {
 const hasDetails = (m) => m.method || m.cookware || m.heat || m.tempC != null || m.minutes != null || m.oilG != null ||
   m.fatG != null || (m.seasonings || []).length || m.liquidMl != null || m.cookedG != null || m.ate || m.notes;
 
-function ingredientRow(v) {
+// Picks the unit last used with this name (e.g. egg -> pc), unless the user already chose one or typed an amount.
+function autoUnit(nameEl, amountEl, unitEl, units, touched) {
+  nameEl.addEventListener('change', () => {
+    const u = units[nameEl.value.trim().toLowerCase()];
+    if (u && !touched() && amountEl.value === '') unitEl.value = u;
+  });
+}
+
+function ingredientRow(v, units = {}) {
   const state = segmented([['raw', 'Raw'], ['cooked', 'Cooked']]);
   state.set(v.state || 'raw');
   state.el.classList.add('small');
+  const a = ingAmount(v);
+  const unit = h('select', { name: 'iunit', 'aria-label': 'Unit' }, UNITS.map((u) => h('option', { value: u }, u)));
+  unit.value = a.unit;
+  let touched = !!v.unit || !!v.grams;
+  unit.addEventListener('change', () => { touched = true; });
+  const name = input('iname', { placeholder: 'Ingredient', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Ingredient name' });
+  const amount = input('iamount', { inputmode: 'decimal', placeholder: '0', value: fmt(a.amount), 'aria-label': 'Amount' });
+  autoUnit(name, amount, unit, units, () => touched);
   const row = h('div', { class: 'ing' },
-    h('div', { class: 'ing-top' },
-      input('iname', { placeholder: 'Ingredient', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Ingredient name' }),
-      h('div', { class: 'with-unit g' }, input('igrams', { inputmode: 'decimal', placeholder: '0', value: fmt(v.grams), 'aria-label': 'Grams' }), h('span', { class: 'unit' }, 'g')),
-      h('button', { type: 'button', class: 'x', 'aria-label': 'Remove ingredient', onclick: () => removeRow(row) }, '×')),
-    h('div', { class: 'ing-sub' }, state.el, input('ibrand', { placeholder: 'Brand (optional)', value: v.brand || '', autocapitalize: 'sentences', 'aria-label': 'Brand' })));
+    h('div', { class: 'ing-top' }, name, h('button', { type: 'button', class: 'x', 'aria-label': 'Remove ingredient', onclick: () => removeRow(row) }, '×')),
+    h('div', { class: 'ing-amt' }, amount, unit, state.el),
+    input('ibrand', { placeholder: 'Brand (optional)', value: v.brand || '', autocapitalize: 'sentences', 'aria-label': 'Brand', class: 'brand' }));
   return row;
 }
 
-function seasoningRow(v) {
-  const unit = h('select', { name: 'sunit', 'aria-label': 'Unit' }, ['g', 'tsp', 'tbsp'].map((u) => h('option', { value: u }, u)));
+function seasoningRow(v, units = {}) {
+  const unit = h('select', { name: 'sunit', 'aria-label': 'Unit' }, SEASONING_UNITS.map((u) => h('option', { value: u }, u)));
   unit.value = v.unit || 'g';
-  const row = h('div', { class: 'sea' },
-    input('sname', { placeholder: 'Salt, soy sauce…', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Seasoning name' }),
-    input('samount', { inputmode: 'decimal', placeholder: '0', value: fmt(v.amount), 'aria-label': 'Amount' }),
-    unit,
+  let touched = !!v.unit;
+  unit.addEventListener('change', () => { touched = true; });
+  const name = input('sname', { placeholder: 'Salt, soy sauce…', list: 'dl-ings', value: v.name || '', autocapitalize: 'sentences', 'aria-label': 'Seasoning name' });
+  const amount = input('samount', { inputmode: 'decimal', placeholder: '0', value: fmt(v.amount), 'aria-label': 'Amount' });
+  autoUnit(name, amount, unit, units, () => touched);
+  const row = h('div', { class: 'sea' }, name, amount, unit,
     h('button', { type: 'button', class: 'x', 'aria-label': 'Remove seasoning', onclick: () => removeRow(row) }, '×'));
   return row;
 }

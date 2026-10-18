@@ -1,4 +1,4 @@
-import { h, fmt, dayLabel, mealGrams } from './ui.js';
+import { h, fmt, dayLabel, mealGrams, amountText } from './ui.js';
 import { allMeals, deleteMeal, saveMeal } from './db.js';
 import { toast, show } from './app.js';
 import { methodLabel } from './log.js';
@@ -44,7 +44,7 @@ function mealCard(m, root) {
     h('div', { class: 'meal-dish' }, m.dish),
     sub && h('div', { class: 'meal-sub' }, sub),
     h('div', { class: 'ing-list' }, (m.ingredients || []).map((i) =>
-      h('div', { class: 'ing-line' }, h('span', {}, i.name + (i.brand ? ` (${i.brand})` : '')), h('span', { class: 'g' }, `${fmt(i.grams)} g${i.state === 'cooked' ? ' cooked' : ''}`)))),
+      h('div', { class: 'ing-line' }, h('span', {}, i.name + (i.brand ? ` (${i.brand})` : '')), h('span', { class: 'g' }, `${amountText(i)}${i.state === 'cooked' ? ' cooked' : ''}`)))),
     fats && h('div', { class: 'meal-sub' }, fats));
 
   const del = h('button', { class: 'swipe-del', 'aria-label': 'Delete meal', onclick: async () => {

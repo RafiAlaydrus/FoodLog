@@ -19,7 +19,7 @@ Use the home-screen app for all your logging. Safari and the installed app keep 
 
 ## Using it
 
-- **Log**: dish, ingredients with grams and raw/cooked, and an optional collapsible *Cooking details* section. Tap **Save as dish** to keep a meal as a template, then tap its chip at the top of Log to reuse it.
+- **Log**: dish, ingredients with an amount and unit (g, kg, ml, L, pc, tsp, tbsp, cup, remembered per ingredient so "egg" comes up as pc) and raw/cooked, and an optional collapsible *Cooking details* section. Tap **Save as dish** to keep a meal as a template, then tap its chip at the top of Log to reuse it.
 - **History**: grouped by day with gram totals. Tap a meal to edit it, swipe left to delete.
 - **Export**: pick a range, then **Copy as text** (paste into Claude), **Download CSV**, or **Share** (iOS share sheet).
 - **Backup** (bottom of Export): download a JSON backup and restore it later. Do this now and then, especially before changing phones.
